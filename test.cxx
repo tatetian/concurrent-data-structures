@@ -8,8 +8,7 @@
 using namespace std;
 
 #define MAX(a, b)	((a) >= (b) ? (a) : (b))
-//#define MAX_NBITS	TREE_BITMAP_MAX_NBITS
-#define MAX_NBITS	128
+#define MAX_NBITS	(32*32*32)
 #define MAX_NPRODUCERS	8
 #define NUM_TESTCASES	1024
 
@@ -30,25 +29,16 @@ void produce(int count, bitset<MAX_NBITS> *bitset, TreeBitmap *tb, size_t nbits)
 }
 
 void consume(bitset<MAX_NBITS> *bitset, TreeBitmap *tb, size_t nbits) {
-	size_t index_base;
-	unsigned int extracted_bits = 0;
+	size_t indexes[128];
+	size_t count = 0;
 	while (1) {
-		extracted_bits = tb->extract(&index_base);
-		if (extracted_bits == 0 && keep_consuming == 0) {
-			extracted_bits = tb->extract(&index_base);
-			if (extracted_bits == 0) break;
+		count = tb->scan(indexes, 128);
+		if (count == 0 && keep_consuming == 0) {
+			count = tb->scan(indexes, 12);
+			if (count == 0) break;
 		}
-
-		size_t index = index_base;
-		unsigned int consumed_bits = extracted_bits;
-		while (consumed_bits) {
-			if (consumed_bits & 1) {
-				bitset->set(index);
-			}
-			consumed_bits >>= 1;
-			index++;
-		}
-	} ;
+		for (size_t i = 0; i < count; i++) bitset->set(indexes[i]);
+	}
 }
 
 bitset<MAX_NBITS> bitset_xor(bitset<MAX_NBITS> a, bitset<MAX_NBITS> b) {
@@ -103,10 +93,11 @@ int main() {
 		size_t count = MAX(nbits * (rand() % 100) / 100, 1);
 		int nproducers = MAX(rand() % MAX_NPRODUCERS, 1);
 		int passed = test_case(nbits, count, nproducers);
+		//int passed = test_case(nbits, count, 1);
 		//int passed = test_case(64, 32, 2);
-		//if (!passed) break;
+		if (!passed) break;
 		tc_i++;
-		if (tc_i % 100000 == 0) {
+		if (tc_i % 100 == 0) {
 			cout << tc_i << endl;
 		}
 	}
